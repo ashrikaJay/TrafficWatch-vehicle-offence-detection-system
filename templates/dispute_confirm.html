@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispute Submitted – Confirmation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 18px 24px; text-align: center;
+        }
+        .container { max-width: 560px; margin: 36px auto; padding: 0 20px; }
+
+        .success-banner {
+            background: linear-gradient(135deg, #17a2b8, #117a8b);
+            color: white; border-radius: 14px; padding: 30px;
+            text-align: center; margin-bottom: 24px;
+        }
+        .success-banner .icon { font-size: 60px; margin-bottom: 12px; }
+        .success-banner h2 { font-size: 24px; margin-bottom: 6px; }
+        .success-banner p { opacity: 0.9; font-size: 14px; }
+
+        .detail-card {
+            background: white; border-radius: 14px; padding: 28px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.09); margin-bottom: 20px;
+        }
+        .detail-card h3 { color: #043f34; font-size: 16px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #b6e5d2; }
+        .row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .row:last-child { border-bottom: none; }
+        .rl { color: #777; }
+        .rv { font-weight: 600; color: #222; }
+
+        .timeline {
+            background: #f0faf6; border-radius: 10px; padding: 18px;
+            margin-top: 18px;
+        }
+        .timeline h4 { color: #043f34; font-size: 14px; margin-bottom: 14px; }
+        .step { display: flex; gap: 14px; margin-bottom: 12px; align-items: flex-start; }
+        .step-icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+        .step-text { font-size: 13px; color: #444; }
+        .step-text strong { color: #043f34; }
+
+        .notif-note { background: #e3f2fd; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #1976d2; margin-top: 18px; }
+
+        .actions { display: flex; gap: 12px; margin-top: 20px; }
+        .btn { flex: 1; padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; text-align: center; display: block; transition: 0.2s; }
+        .btn-home { background: #4E8EA2; color: white; }
+        .btn-home:hover { background: #043f34; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🚗 Vehicle Offence Portal – Dispute Submitted</h1>
+</div>
+
+<div class="container">
+    <div class="success-banner">
+        <div class="icon">📋</div>
+        <h2>Dispute Successfully Submitted</h2>
+        <p>Your dispute has been received and queued for DMT review.</p>
+    </div>
+
+    <div class="detail-card">
+        <h3>Dispute Reference Details</h3>
+        <div class="row">
+            <span class="rl">Dispute Reference</span>
+            <span class="rv">DSP-{{ "%04d"|format(d.id) }}</span>
+        </div>
+        <div class="row">
+            <span class="rl">Violation</span>
+            <span class="rv">#{{ v.id }} – {{ v.violation_type.upper() }}</span>
+        </div>
+        <div class="row">
+            <span class="rl">Vehicle Plate</span>
+            <span class="rv">{{ v.user.license_number }}</span>
+        </div>
+        <div class="row">
+            <span class="rl">Submitted</span>
+            <span class="rv">{{ d.submitted_at.strftime('%d %B %Y at %H:%M') }}</span>
+        </div>
+        <div class="row">
+            <span class="rl">Status</span>
+            <span class="rv" style="color:#17a2b8;">Under Review</span>
+        </div>
+        <div class="row">
+            <span class="rl">Fine Amount</span>
+            <span class="rv">Rs. {{ "%.2f"|format(v.penalty_amount) }} (suspended pending review)</span>
+        </div>
+
+        <div class="timeline">
+            <h4>📍 What happens next</h4>
+            <div class="step"><div class="step-icon">✅</div><div class="step-text"><strong>Now:</strong> Dispute received and logged. Violation status set to Disputed.</div></div>
+            <div class="step"><div class="step-icon">🔍</div><div class="step-text"><strong>Within 5 days:</strong> DMT officer assigned to review your dispute and examine evidence.</div></div>
+            <div class="step"><div class="step-icon">⚖️</div><div class="step-text"><strong>Within 14 days:</strong> Decision made — fine cancelled (approved) or reinstated (rejected) with explanation.</div></div>
+            <div class="step"><div class="step-icon">📱</div><div class="step-text"><strong>Notification:</strong> You will receive an SMS with the outcome and explanation.</div></div>
+        </div>
+
+        <div class="notif-note">
+            📱 An SMS confirmation has been sent to the registered mobile number for vehicle {{ v.user.license_number }}.
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-home">🏠 Back to Dashboard</a>
+    </div>
+</div>
+</body>
+</html>

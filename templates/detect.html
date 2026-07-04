@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Helmet Detection - Vehicle Offence System</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; }
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .container { max-width: 700px; margin: 40px auto; padding: 0 20px; }
+        .card {
+            background: white; border-radius: 10px;
+            padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .card h2 { color: #043f34; margin-bottom: 20px; }
+        .upload-area {
+            border: 3px dashed #b6e5d2; border-radius: 10px;
+            padding: 40px; text-align: center; cursor: pointer;
+            transition: 0.3s; background: #f9fffe;
+        }
+        .upload-area:hover { border-color: #043f34; background: #edfaf5; }
+        .upload-area input[type=file] { display: none; }
+        .upload-area label { cursor: pointer; font-size: 16px; color: #555; }
+        .preview-img {
+            max-width: 100%; border-radius: 8px;
+            margin-top: 15px; display: none;
+        }
+        .btn {
+            background: #043f34; color: white; padding: 14px 30px;
+            border: none; border-radius: 8px; font-size: 16px;
+            font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px;
+            transition: 0.3s;
+        }
+        .btn:hover { background: #4E8EA2; }
+        .result-box {
+            border-radius: 10px; padding: 20px;
+            margin-top: 20px; display: none;
+        }
+        .result-violation { background: #ffebee; border-left: 5px solid #c62828; }
+        .result-clear { background: #e8f5e9; border-left: 5px solid #2e7d32; }
+        .spinner { display: none; text-align: center; padding: 20px; color: #666; }
+        .back-link { color: #043f34; text-decoration: none; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🪖 Helmet Violation Detection</h1>
+        <a href="{{ url_for('admin') }}" style="color:white; text-decoration:none;">← Admin Panel</a>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Upload Traffic Image for Analysis</h2>
+            <p style="color:#666; margin-bottom:20px;">
+                Upload a still image from CCTV footage. The system will automatically
+                detect helmet violations using computer vision.
+            </p>
+
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="imageInput" accept="image/*">
+                <label for="imageInput">
+                    <div style="font-size:50px;">📷</div>
+                    <div>Click to select image or drag and drop</div>
+                    <div style="font-size:13px; color:#999; margin-top:8px;">JPG, PNG supported</div>
+                </label>
+                <img id="previewImg" class="preview-img" alt="Preview">
+            </div>
+
+            <button class="btn" id="detectBtn" onclick="runDetection()" disabled>
+                🔍 Run Detection
+            </button>
+        </div>
+
+        <div class="spinner" id="spinner">
+            ⏳ Analysing image with AI model, please wait...
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3 id="resultTitle"></h3>
+            <div id="resultDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const previewImg = document.getElementById('previewImg');
+        const detectBtn = document.getElementById('detectBtn');
+
+        imageInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                    detectBtn.disabled = false;
+                };
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        function runDetection() {
+            const file = imageInput.files[0];
+            if (!file) return;
+
+            detectBtn.disabled = true;
+            document.getElementById('spinner').style.display = 'block';
+            document.getElementById('resultBox').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', 'helmet');
+
+            fetch('/detect', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('spinner').style.display = 'none';
+                    detectBtn.disabled = false;
+                    showResult(data);
+                })
+                .catch(err => {
+                    document.getElementById('spinner').style.display = 'none';
+                    detectBtn.disabled = false;
+                    alert('Detection failed: ' + err);
+                });
+        }
+
+        function showResult(data) {
+            const box = document.getElementById('resultBox');
+            const title = document.getElementById('resultTitle');
+            const details = document.getElementById('resultDetails');
+
+            box.style.display = 'block';
+
+            if (data.detected) {
+                box.className = 'result-box result-violation';
+                title.textContent = '⚠️ Helmet Violation Detected';
+                details.innerHTML = `
+                    <p><strong>Violation ID:</strong> #${data.violation_id}</p>
+                    <p><strong>Plate (Simulated):</strong> ${data.plate}</p>
+                    <p><strong>Confidence:</strong> ${data.confidence}%</p>
+                    <p><strong>Penalty:</strong> Rs. ${data.penalty.toFixed(2)}</p>
+                    <p><strong>Labels Found:</strong> ${data.labels_found.join(', ')}</p>
+                    <p style="margin-top:10px; color:#555;">
+                        ✅ Violation record saved to database. Owner notification queued.
+                    </p>`;
+            } else {
+                box.className = 'result-box result-clear';
+                title.textContent = '✅ No Violation Detected';
+                details.innerHTML = `
+                    <p>No helmet violation found in this image.</p>
+                    <p><strong>Labels Found:</strong> ${(data.labels_found || []).join(', ') || 'None'}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

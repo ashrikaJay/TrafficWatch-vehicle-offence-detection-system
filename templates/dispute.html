@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispute Violation #{{ v.id }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .back-btn { background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; }
+
+        .container { max-width: 680px; margin: 30px auto; padding: 0 20px; }
+
+        .card { background: white; border-radius: 14px; padding: 28px; box-shadow: 0 2px 10px rgba(0,0,0,0.09); margin-bottom: 20px; }
+        .card h2 { color: #043f34; font-size: 17px; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid #b6e5d2; }
+
+        /* Violation summary */
+        .violation-header {
+            background: linear-gradient(135deg, #043f34, #0a6b56);
+            color: white; border-radius: 10px; padding: 18px 22px;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        .vh-label { font-size: 12px; opacity: 0.8; }
+        .vh-val { font-size: 18px; font-weight: 700; }
+
+        /* Evidence thumbnail */
+        .ev-thumb { width: 100%; max-height: 220px; object-fit: contain; border-radius: 8px; border: 1px solid #eee; background: #f8f8f8; }
+        .no-ev { background: #f8f8f8; border: 1px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; color: #aaa; font-size: 14px; }
+
+        /* Form */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 700; color: #444; margin-bottom: 7px; }
+        .form-group .hint { font-size: 12px; color: #888; margin-top: 4px; }
+
+        select, textarea {
+            width: 100%; padding: 11px 14px; border: 2px solid #ddd;
+            border-radius: 8px; font-size: 14px; font-family: inherit;
+            transition: 0.2s; background: white;
+        }
+        select:focus, textarea:focus { outline: none; border-color: #4E8EA2; }
+        textarea { resize: vertical; min-height: 120px; }
+
+        /* Upload area */
+        .upload-area {
+            border: 2px dashed #b6e5d2; border-radius: 10px; padding: 28px;
+            text-align: center; cursor: pointer; transition: 0.2s;
+            background: #f9fffe;
+        }
+        .upload-area:hover { border-color: #043f34; background: #f0faf6; }
+        .upload-area input { display: none; }
+        .upload-area label { cursor: pointer; }
+        .upload-area .icon { font-size: 40px; margin-bottom: 10px; }
+        .upload-area .txt { font-size: 14px; color: #555; }
+        .upload-area .sub { font-size: 12px; color: #aaa; margin-top:4px; }
+        .upload-preview { display: none; max-width: 100%; max-height: 160px; object-fit: contain; margin-top: 12px; border-radius: 6px; border: 1px solid #eee; }
+
+        /* Warning */
+        .warning-box {
+            background: #fff3cd; border-left: 4px solid #ffc107;
+            border-radius: 0 8px 8px 0; padding: 14px 16px;
+            font-size: 13px; color: #856404; margin-bottom: 20px;
+        }
+
+        /* Actions */
+        .btn-submit {
+            width: 100%; padding: 14px; background: #043f34; color: white;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 700;
+            cursor: pointer; transition: 0.2s;
+        }
+        .btn-submit:hover { background: #4E8EA2; }
+        .btn-cancel { display: block; text-align: center; color: #888; font-size: 14px; text-decoration: none; margin-top: 14px; }
+        .btn-cancel:hover { color: #043f34; }
+
+        .char-count { font-size: 11px; color: #aaa; text-align: right; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📝 Dispute Violation #{{ v.id }}</h1>
+    <a href="{{ url_for('violation_detail', vid=v.id) }}" class="back-btn">← Back</a>
+</div>
+
+<div class="container">
+
+    <!-- Violation summary -->
+    <div class="violation-header">
+        <div>
+            <div class="vh-label">Violation</div>
+            <div class="vh-val">{{ v.violation_type.upper() }} – Rs. {{ "%.2f"|format(v.penalty_amount) }}</div>
+            <div class="vh-label" style="margin-top:4px;">{{ v.location }} · {{ v.timestamp.strftime('%d %b %Y') }}</div>
+        </div>
+        <div style="text-align:right;">
+            <div class="vh-label">Plate</div>
+            <div class="vh-val">{{ v.user.license_number }}</div>
+        </div>
+    </div>
+
+    <!-- System evidence -->
+    <div class="card">
+        <h2>📷 System Evidence Against You</h2>
+        <p style="font-size:13px; color:#666; margin-bottom:14px;">
+            Review this evidence before submitting your dispute. You may upload counter-evidence below.
+        </p>
+        {% if ev %}
+        <img src="{{ ev }}" class="ev-thumb" alt="Violation evidence">
+        <p style="font-size:12px; color:#888; margin-top:8px;">
+            Captured: {{ v.timestamp.strftime('%d %b %Y %H:%M') }} – {{ v.location }}
+        </p>
+        {% else %}
+        <div class="no-ev">📷 No image attached to this record (simulated data)</div>
+        {% endif %}
+    </div>
+
+    <!-- Dispute form -->
+    <div class="card">
+        <h2>📝 Dispute Submission Form (FR10)</h2>
+
+        <div class="warning-box">
+            <strong>⚠️ Important:</strong> False or misleading disputes may result in additional penalties.
+            Only submit if you have a genuine reason to dispute this violation.
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="disputeForm">
+            <div class="form-group">
+                <label>Reason for Dispute *</label>
+                <select name="reason" required>
+                    <option value="" disabled selected>Select a reason...</option>
+                    <option value="not_my_vehicle">This vehicle was not being driven by me</option>
+                    <option value="vehicle_stolen">Vehicle was reported stolen at this time</option>
+                    <option value="violation_did_not_occur">The violation did not occur</option>
+                    <option value="incorrect_plate">Incorrect vehicle plate identified</option>
+                    <option value="technical_error">Technical error / system misidentification</option>
+                    <option value="medical_emergency">Medical emergency required breaking rule</option>
+                    <option value="other">Other reason</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Full Explanation *</label>
+                <textarea name="explanation" id="explanation" required
+                          placeholder="Provide a detailed explanation (minimum 50 characters). Include dates, times, and any relevant context to support your dispute..."
+                          oninput="updateCount(this)"></textarea>
+                <div class="char-count" id="charCount">0 / 50 minimum</div>
+                <div class="hint">Be specific. DMT staff will review your explanation alongside the recorded evidence.</div>
+            </div>
+
+            <div class="form-group">
+                <label>Supporting Evidence (Optional)</label>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" name="evidence" id="evidenceFile"
+                           accept="image/*,.pdf" onchange="previewFile(this)">
+                    <label for="evidenceFile">
+                        <div class="icon">📎</div>
+                        <div class="txt">Click to attach supporting evidence</div>
+                        <div class="sub">Photo, video screenshot, or PDF – max 10MB</div>
+                    </label>
+                    <img id="evidencePreview" class="upload-preview" alt="Preview">
+                </div>
+                <div class="hint">Examples: photos, insurance documents, parking receipts, medical certificates.</div>
+            </div>
+
+            <button type="submit" class="btn-submit" onclick="return validateForm()">
+                📤 Submit Dispute
+            </button>
+        </form>
+
+        <a href="{{ url_for('violation_detail', vid=v.id) }}" class="btn-cancel">Cancel and go back</a>
+
+        <p style="font-size:12px; color:#aaa; text-align:center; margin-top:16px;">
+            Expected review time: 14 working days. You will receive an SMS notification when reviewed.
+        </p>
+    </div>
+
+</div>
+
+<script>
+function updateCount(el) {
+    const len = el.value.length;
+    document.getElementById('charCount').textContent = len + ' / 50 minimum';
+    document.getElementById('charCount').style.color = len >= 50 ? '#28a745' : '#e74c3c';
+}
+function previewFile(input) {
+    const preview = document.getElementById('evidencePreview');
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.style.display = 'none';
+            document.querySelector('.upload-area .txt').textContent = '📄 ' + file.name + ' attached';
+        }
+    }
+}
+function validateForm() {
+    const expl = document.getElementById('explanation').value;
+    if (expl.length < 50) {
+        alert('Please provide a more detailed explanation (minimum 50 characters).');
+        return false;
+    }
+    return confirm('Submit this dispute for DMT review? You will be notified of the outcome within 14 working days.');
+}
+</script>
+</body>
+</html>

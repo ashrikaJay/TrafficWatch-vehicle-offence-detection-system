@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel – Vehicle Offence Detection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { font-size: 22px; }
+        .nav-links { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-links a {
+            color: white; text-decoration: none; padding: 8px 14px;
+            background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px;
+            transition: 0.2s;
+        }
+        .nav-links a:hover { background: rgba(255,255,255,0.35); }
+        .nav-links a.active { background: rgba(255,255,255,0.4); font-weight: 700; }
+
+        .container { max-width: 1400px; margin: 28px auto; padding: 0 20px; }
+
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stat {
+            background: white; padding: 22px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;
+            transition: 0.2s;
+        }
+        .stat:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+        .stat .si { font-size: 34px; margin-bottom: 8px; }
+        .stat h3 { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .stat .val { font-size: 30px; font-weight: 700; color: #043f34; }
+        .stat .val.warn { color: #e74c3c; }
+        .stat .val.info { color: #17a2b8; }
+
+        /* Type breakdown */
+        .breakdown {
+            background: white; border-radius: 12px; padding: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 28px;
+        }
+        .breakdown h3 { color: #043f34; font-size: 16px; margin-bottom: 16px; }
+        .breakdown-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .breakdown-item { text-align: center; }
+        .breakdown-item .bi { font-size: 28px; margin-bottom: 6px; }
+        .breakdown-item .bt { font-size: 12px; color: #888; margin-bottom: 4px; }
+        .breakdown-item .bv { font-size: 22px; font-weight: 700; }
+        .bar-bg { background: #eee; border-radius: 4px; height: 8px; margin-top: 6px; }
+        .bar-fill { border-radius: 4px; height: 8px; }
+
+        /* Filter */
+        .filter-bar {
+            background: white; border-radius: 12px; padding: 16px 20px;
+            display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px;
+        }
+        .filter-bar label { font-size: 13px; font-weight: 600; color: #555; }
+        .filter-bar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+
+        /* Table */
+        .table-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 15px; text-align: left; font-size: 13px; }
+        th { background: #043f34; color: white; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        tr:hover { background: #f0faf6; }
+
+        .badge { padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .b-helmet { background: #e3f2fd; color: #1976d2; }
+        .b-redlight { background: #ffebee; color: #c62828; }
+        .b-stopline { background: #fff3e0; color: #e65100; }
+        .b-pending { background: #fff3cd; color: #856404; }
+        .b-paid { background: #d4edda; color: #155724; }
+        .b-disputed { background: #cce5ff; color: #004085; }
+        .b-cancelled { background: #e2e3e5; color: #383d41; }
+
+        .conf-bar { width: 80px; height: 7px; background: #eee; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 6px; }
+        .conf-fill { height: 100%; background: linear-gradient(90deg, #28a745, #ffc107, #dc3545); }
+
+        .thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+        .no-img { font-size: 11px; color: #bbb; }
+
+        .empty { text-align: center; padding: 50px; color: #aaa; }
+        .empty .ei { font-size: 60px; margin-bottom: 14px; opacity: 0.5; }
+
+        .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .section-head h2 { color: #333; font-size: 17px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🛡️ DMT Admin Control Panel</h1>
+    <div class="nav-links">
+        <a href="{{ url_for('admin') }}" class="active">Dashboard</a>
+        <a href="{{ url_for('detect_violation') }}">🪖 Run Detection</a>
+        <a href="{{ url_for('admin_disputes') }}">📝 Disputes{% if disputed_count > 0 %} ({{ disputed_count }}){% endif %}</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat">
+            <div class="si">📊</div>
+            <h3>Total Violations</h3>
+            <div class="val">{{ total_violations }}</div>
+        </div>
+        <div class="stat">
+            <div class="si">⏳</div>
+            <h3>Pending Cases</h3>
+            <div class="val {% if pending_count > 0 %}warn{% endif %}">{{ pending_count }}</div>
+        </div>
+        <div class="stat">
+            <div class="si">📝</div>
+            <h3>Active Disputes</h3>
+            <div class="val {% if disputed_count > 0 %}info{% endif %}">{{ disputed_count }}</div>
+        </div>
+        <div class="stat">
+            <div class="si">💰</div>
+            <h3>Total Revenue</h3>
+            <div class="val">Rs. {{ "%.0f"|format(total_revenue) }}</div>
+        </div>
+        <div class="stat">
+            <div class="si">✅</div>
+            <h3>Resolved Today</h3>
+            <div class="val">{{ resolved_today }}</div>
+        </div>
+    </div>
+
+    <!-- Violation Type Breakdown (FR15) -->
+    <div class="breakdown">
+        <h3>📈 Violation Type Breakdown (FR15 – Statistics)</h3>
+        {% set total = helmet_count + redlight_count + stopline_count %}
+        <div class="breakdown-grid">
+            <div class="breakdown-item">
+                <div class="bi">🪖</div>
+                <div class="bt">HELMET</div>
+                <div class="bv" style="color:#1976d2;">{{ helmet_count }}</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:{{ (helmet_count / (total or 1) * 100)|int }}%; background:#1976d2;"></div>
+                </div>
+                <div style="font-size:11px; color:#aaa; margin-top:4px;">{{ ((helmet_count / (total or 1)) * 100)|int }}%</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="bi">🚦</div>
+                <div class="bt">RED LIGHT</div>
+                <div class="bv" style="color:#c62828;">{{ redlight_count }}</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:{{ (redlight_count / (total or 1) * 100)|int }}%; background:#c62828;"></div>
+                </div>
+                <div style="font-size:11px; color:#aaa; margin-top:4px;">{{ ((redlight_count / (total or 1)) * 100)|int }}%</div>
+            </div>
+            <div class="breakdown-item">
+                <div class="bi">🛑</div>
+                <div class="bt">STOP LINE</div>
+                <div class="bv" style="color:#e65100;">{{ stopline_count }}</div>
+                <div class="bar-bg">
+                    <div class="bar-fill" style="width:{{ (stopline_count / (total or 1) * 100)|int }}%; background:#e65100;"></div>
+                </div>
+                <div style="font-size:11px; color:#aaa; margin-top:4px;">{{ ((stopline_count / (total or 1)) * 100)|int }}%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="filter-bar">
+        <label>Type:</label>
+        <select id="typeFilter" onchange="filterTable()">
+            <option value="all">All Types</option>
+            <option value="helmet">Helmet</option>
+            <option value="redlight">Red Light</option>
+            <option value="stopline">Stop Line</option>
+        </select>
+        <label>Status:</label>
+        <select id="statusFilter" onchange="filterTable()">
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="disputed">Disputed</option>
+            <option value="cancelled">Cancelled</option>
+        </select>
+    </div>
+
+    <!-- Violations Table -->
+    <div class="section-head">
+        <h2>Recent Violations</h2>
+    </div>
+
+    <div class="table-wrap">
+        {% if violations %}
+        <table id="violationsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date &amp; Time</th>
+                    <th>Plate</th>
+                    <th>Owner</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Evidence</th>
+                    <th>Confidence</th>
+                    <th>Penalty</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in violations %}
+                <tr data-type="{{ v.violation_type }}" data-status="{{ v.status }}">
+                    <td><strong>#{{ v.id }}</strong></td>
+                    <td>{{ v.timestamp.strftime('%d %b %Y %H:%M') }}</td>
+                    <td><strong>{{ v.user.license_number }}</strong></td>
+                    <td>{{ v.user.name }}</td>
+                    <td><span class="badge b-{{ v.violation_type }}">{{ v.violation_type.upper() }}</span></td>
+                    <td style="font-size:12px;">{{ v.location }}</td>
+                    <td>
+                        {% if v.image_path %}
+                        <img src="{{ url_for('static', filename=v.image_path.replace('static/', '', 1)) }}"
+                             alt="Evidence" class="thumb"
+                             onerror="this.style.display='none'; this.nextSibling.style.display='inline';"
+                             onclick="openImg(this.src)">
+                        <span class="no-img" style="display:none;">📷 img</span>
+                        {% else %}
+                        <span class="no-img">No image</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-size:12px;">{{ "%.0f"|format((v.confidence_score or 0) * 100) }}%</span>
+                        <div class="conf-bar">
+                            <div class="conf-fill" style="width:{{ (v.confidence_score or 0) * 100 }}%"></div>
+                        </div>
+                    </td>
+                    <td><strong>Rs. {{ "%.2f"|format(v.penalty_amount) }}</strong></td>
+                    <td><span class="badge b-{{ v.status }}">{{ v.status.upper() }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty">
+            <div class="ei">📭</div>
+            <p>No violations recorded yet. Run detection to capture violations.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Image lightbox -->
+<div id="imgModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center;" onclick="closeImg()">
+    <img id="modalImg" style="max-width:90vw; max-height:90vh; border-radius:8px;" alt="">
+    <div style="position:fixed; top:20px; right:28px; color:white; font-size:36px; cursor:pointer;" onclick="closeImg()">✕</div>
+</div>
+
+<script>
+function filterTable() {
+    const type = document.getElementById('typeFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    document.querySelectorAll('#violationsTable tbody tr').forEach(row => {
+        const mt = type === 'all' || row.dataset.type === type;
+        const ms = status === 'all' || row.dataset.status === status;
+        row.style.display = mt && ms ? '' : 'none';
+    });
+}
+function openImg(src) {
+    document.getElementById('modalImg').src = src;
+    document.getElementById('imgModal').style.display = 'flex';
+}
+function closeImg() { document.getElementById('imgModal').style.display = 'none'; }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeImg(); });
+</script>
+</body>
+</html>

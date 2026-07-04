@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispute Review – Admin Panel</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { font-size: 22px; }
+        .nav-links { display: flex; gap: 10px; }
+        .nav-links a { color: white; text-decoration: none; padding: 8px 14px; background: rgba(255,255,255,0.2); border-radius: 6px; font-size: 13px; }
+        .nav-links a:hover { background: rgba(255,255,255,0.35); }
+        .nav-links a.active { background: rgba(255,255,255,0.4); font-weight: 700; }
+
+        .container { max-width: 1200px; margin: 28px auto; padding: 0 20px; }
+
+        /* Dispute card */
+        .dispute-card {
+            background: white; border-radius: 14px; margin-bottom: 22px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.09); overflow: hidden;
+        }
+        .dispute-card-header {
+            padding: 16px 22px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #f0faf6;
+        }
+        .dispute-ref { font-size: 18px; font-weight: 700; color: #043f34; }
+        .dispute-sub { font-size: 12px; color: #888; margin-top: 2px; }
+        .dispute-body { padding: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+        @media (max-width: 700px) { .dispute-body { grid-template-columns: 1fr; } }
+
+        .panel h4 { font-size: 13px; font-weight: 700; color: #043f34; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+        .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+        .info-row:last-child { border-bottom: none; }
+        .il { color: #777; }
+        .iv { font-weight: 600; color: #222; }
+
+        .explanation-box {
+            background: #f8f8f8; border-radius: 8px; padding: 14px;
+            font-size: 13px; color: #444; line-height: 1.6; font-style: italic;
+        }
+
+        .ev-thumb { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 8px; border: 1px solid #eee; cursor: zoom-in; }
+        .no-ev { background: #f8f8f8; border: 1px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; color: #aaa; font-size: 13px; }
+
+        .badge { padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; display: inline-block; }
+        .b-pending { background: #fff3cd; color: #856404; }
+        .b-approved { background: #d4edda; color: #155724; }
+        .b-rejected { background: #f8d7da; color: #721c24; }
+        .b-helmet { background: #e3f2fd; color: #1976d2; }
+        .b-redlight { background: #ffebee; color: #c62828; }
+        .b-stopline { background: #fff3e0; color: #e65100; }
+
+        /* Review form */
+        .review-form {
+            background: #f0faf6; border-top: 2px solid #b6e5d2; padding: 20px 22px;
+        }
+        .review-form h4 { color: #043f34; font-size: 14px; margin-bottom: 14px; }
+        .review-form textarea {
+            width: 100%; padding: 11px 14px; border: 2px solid #ddd;
+            border-radius: 8px; font-size: 13px; font-family: inherit;
+            resize: vertical; min-height: 80px; transition: 0.2s;
+        }
+        .review-form textarea:focus { outline: none; border-color: #4E8EA2; }
+        .review-actions { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+        .btn {
+            padding: 11px 22px; border-radius: 7px; font-size: 14px; font-weight: 700;
+            border: none; cursor: pointer; transition: 0.2s; display: inline-block;
+        }
+        .btn-approve { background: #28a745; color: white; }
+        .btn-approve:hover { background: #218838; }
+        .btn-reject { background: #dc3545; color: white; }
+        .btn-reject:hover { background: #c82333; }
+
+        .resolved-note { font-size: 13px; color: #555; padding: 14px; background: #f9f9f9; border-radius: 8px; }
+
+        .empty { text-align: center; padding: 60px 20px; color: #aaa; background: white; border-radius: 14px; }
+        .empty .ei { font-size: 60px; margin-bottom: 14px; opacity: 0.5; }
+
+        /* Lightbox */
+        .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        .lightbox.open { display: flex; }
+        .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+        .lightbox-close { position: fixed; top: 20px; right: 28px; color: white; font-size: 36px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📝 Dispute Review Queue (FR11)</h1>
+    <div class="nav-links">
+        <a href="{{ url_for('admin') }}">← Dashboard</a>
+        <a href="{{ url_for('admin_disputes') }}" class="active">Disputes ({{ disputes|length }})</a>
+        <a href="{{ url_for('detect_violation') }}">🪖 Detection</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+
+    {% if disputes %}
+
+    {% for d in disputes %}
+    <div class="dispute-card">
+        <!-- Header -->
+        <div class="dispute-card-header">
+            <div>
+                <div class="dispute-ref">DSP-{{ "%04d"|format(d.id) }}</div>
+                <div class="dispute-sub">
+                    Submitted {{ d.submitted_at.strftime('%d %b %Y, %H:%M') }}
+                    &nbsp;·&nbsp; Violation #{{ d.violation_id }}
+                    &nbsp;·&nbsp; {{ d.violation.user.license_number if d.violation else '—' }}
+                </div>
+            </div>
+            <span class="badge b-{{ d.status }}">{{ d.status.upper() }}</span>
+        </div>
+
+        <div class="dispute-body">
+
+            <!-- Left: Violation & Dispute info -->
+            <div class="panel">
+                <h4>📋 Violation Details</h4>
+                {% if d.violation %}
+                <div class="info-row">
+                    <span class="il">Violation Type</span>
+                    <span class="iv"><span class="badge b-{{ d.violation.violation_type }}">{{ d.violation.violation_type.upper() }}</span></span>
+                </div>
+                <div class="info-row">
+                    <span class="il">Penalty</span>
+                    <span class="iv">Rs. {{ "%.2f"|format(d.violation.penalty_amount) }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="il">Location</span>
+                    <span class="iv" style="font-size:12px;">{{ d.violation.location }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="il">Date</span>
+                    <span class="iv">{{ d.violation.timestamp.strftime('%d %b %Y %H:%M') }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="il">Confidence</span>
+                    <span class="iv">{{ "%.1f"|format((d.violation.confidence_score or 0) * 100) }}%</span>
+                </div>
+                {% endif %}
+
+                <h4 style="margin-top:18px;">🧑 Dispute Claim</h4>
+                <div class="info-row">
+                    <span class="il">Reason</span>
+                    <span class="iv">{{ d.reason.replace('_', ' ').title() if d.reason else '—' }}</span>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <div style="font-size:12px; color:#888; margin-bottom:6px;">DRIVER EXPLANATION</div>
+                    <div class="explanation-box">{{ d.explanation or 'No explanation provided.' }}</div>
+                </div>
+
+                {% if d.reviewed_at %}
+                <div style="margin-top:14px; padding:12px; background:#f8f8f8; border-radius:8px;">
+                    <div style="font-size:12px; color:#888;">REVIEW DECISION ({{ d.reviewed_at.strftime('%d %b %Y') }})</div>
+                    <div style="font-size:13px; color:#444; margin-top:4px;">{{ d.decision_explanation or '—' }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right: System evidence + user evidence -->
+            <div class="panel">
+                <h4>📷 System Evidence (CCTV)</h4>
+                {% if d.violation and d.violation.image_path %}
+                {% set ev_rel = d.violation.image_path.replace('static/', '', 1) %}
+                <img src="{{ url_for('static', filename=ev_rel) }}"
+                     class="ev-thumb" alt="System evidence"
+                     onerror="this.style.display='none'"
+                     onclick="openLb(this.src)">
+                {% else %}
+                <div class="no-ev">📷 No CCTV image for this record</div>
+                {% endif %}
+
+                <h4 style="margin-top:16px;">📎 Driver's Supporting Evidence</h4>
+                {% if d.evidence_path %}
+                {% set dev_rel = d.evidence_path.replace('static/', '', 1) %}
+                <img src="{{ url_for('static', filename=dev_rel) }}"
+                     class="ev-thumb" alt="Driver evidence"
+                     onerror="this.style.display='none'"
+                     onclick="openLb(this.src)">
+                {% else %}
+                <div class="no-ev">No supporting evidence uploaded</div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- Review Form -->
+        {% if d.status == 'pending' %}
+        <div class="review-form">
+            <h4>⚖️ DMT Review Decision (FR11)</h4>
+            <p style="font-size:13px; color:#555; margin-bottom:12px;">
+                Review the evidence on both sides before making a decision.
+                The driver will be notified via SMS of the outcome.
+            </p>
+            <form method="POST" action="{{ url_for('review_dispute', did=d.id) }}">
+                <textarea name="decision_explanation"
+                          placeholder="Enter your decision explanation (required). This will be sent to the driver as part of the notification."
+                          required></textarea>
+                <div class="review-actions">
+                    <button type="submit" name="decision" value="approved" class="btn btn-approve"
+                            onclick="return confirm('APPROVE this dispute? The fine will be CANCELLED and the driver notified.')">
+                        ✅ Approve – Cancel Fine
+                    </button>
+                    <button type="submit" name="decision" value="rejected" class="btn btn-reject"
+                            onclick="return confirm('REJECT this dispute? The fine will remain payable and the driver notified.')">
+                        ❌ Reject – Uphold Fine
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="review-form">
+            <div class="resolved-note">
+                ✅ This dispute has been <strong>{{ d.status.upper() }}</strong>
+                {% if d.reviewed_at %}on {{ d.reviewed_at.strftime('%d %b %Y') }}{% endif %}.
+                {% if d.decision_explanation %} Decision note: {{ d.decision_explanation }}{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="empty">
+        <div class="ei">📭</div>
+        <h3>No Disputes Submitted</h3>
+        <p style="margin-top:8px;">When drivers submit disputes for their violations, they will appear here for review.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLb()">
+    <div class="lightbox-close" onclick="closeLb()">✕</div>
+    <img id="lbImg" src="" alt="">
+</div>
+
+<script>
+function openLb(src) {
+    document.getElementById('lbImg').src = src;
+    document.getElementById('lightbox').classList.add('open');
+}
+function closeLb() { document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeLb(); });
+</script>
+</body>
+</html>

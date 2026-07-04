@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Violation #{{ v.id }} – Detail</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.2); color: white; padding: 8px 16px;
+            border-radius: 6px; text-decoration: none; font-size: 14px;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.35); }
+
+        .container { max-width: 900px; margin: 30px auto; padding: 0 20px; }
+
+        .section {
+            background: white; border-radius: 12px; padding: 26px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px;
+        }
+        .section h2 { color: #043f34; font-size: 17px; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 2px solid #b6e5d2; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .info-row { }
+        .info-row label { display: block; font-size: 11px; text-transform: uppercase; color: #999; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .info-row .val { font-size: 16px; color: #222; font-weight: 600; }
+
+        .badge {
+            padding: 5px 12px; border-radius: 12px; font-size: 13px; font-weight: 700;
+        }
+        .b-pending { background: #fff3cd; color: #856404; }
+        .b-paid { background: #d4edda; color: #155724; }
+        .b-disputed { background: #cce5ff; color: #004085; }
+        .b-cancelled { background: #e2e3e5; color: #383d41; }
+        .b-helmet { background: #e3f2fd; color: #1976d2; }
+        .b-redlight { background: #ffebee; color: #c62828; }
+        .b-stopline { background: #fff3e0; color: #e65100; }
+
+        /* Evidence */
+        .evidence-box {
+            background: #f8f8f8; border: 2px solid #eee; border-radius: 10px;
+            overflow: hidden; text-align: center;
+        }
+        .evidence-box img {
+            max-width: 100%; max-height: 420px; object-fit: contain;
+            cursor: zoom-in;
+        }
+        .evidence-label {
+            padding: 10px; font-size: 12px; color: #666;
+            background: #f0f0f0; border-top: 1px solid #eee;
+        }
+        .no-evidence {
+            padding: 50px; color: #aaa;
+            font-size: 15px;
+        }
+
+        /* Rule panel */
+        .rule-box { background: #f0faf6; border-left: 4px solid #043f34; border-radius: 0 10px 10px 0; padding: 18px; margin-bottom: 14px; }
+        .rule-box h4 { color: #043f34; margin-bottom: 8px; font-size: 14px; }
+        .rule-box p { color: #444; font-size: 14px; line-height: 1.6; }
+        .why-box { background: #fffbf0; border-left: 4px solid #e67e22; border-radius: 0 10px 10px 0; padding: 18px; }
+        .why-box h4 { color: #e67e22; margin-bottom: 8px; font-size: 14px; }
+        .why-box p { color: #555; font-size: 14px; line-height: 1.6; }
+
+        /* Location map placeholder */
+        .map-placeholder {
+            background: #e8f5e9; border-radius: 10px; padding: 20px;
+            text-align: center; color: #555; font-size: 14px;
+            border: 1px dashed #b6e5d2;
+        }
+
+        /* Actions */
+        .actions { display: flex; gap: 14px; flex-wrap: wrap; }
+        .btn {
+            padding: 13px 28px; border-radius: 8px; font-size: 15px;
+            font-weight: 700; text-decoration: none; cursor: pointer;
+            border: none; transition: 0.2s; display: inline-block;
+        }
+        .btn-pay { background: #4E8EA2; color: white; }
+        .btn-pay:hover { background: #043f34; }
+        .btn-dispute { background: white; color: #043f34; border: 2px solid #043f34; }
+        .btn-dispute:hover { background: #f0faf6; }
+        .btn-back { background: #f0f0f0; color: #555; }
+        .btn-back:hover { background: #e0e0e0; }
+
+        /* Penalty highlight */
+        .penalty-highlight {
+            background: linear-gradient(135deg, #043f34 0%, #0a6b56 100%);
+            color: white; border-radius: 10px; padding: 20px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .penalty-highlight .amt { font-size: 32px; font-weight: 700; }
+        .penalty-highlight .label { font-size: 13px; opacity: 0.85; }
+
+        /* Image lightbox */
+        .lightbox {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .lightbox.open { display: flex; }
+        .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+        .lightbox-close {
+            position: fixed; top: 20px; right: 28px;
+            color: white; font-size: 36px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>🚗 Violation #{{ v.id }} Detail</h1>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="back-btn">← Back to Dashboard</a>
+</div>
+
+<div class="container">
+
+    <!-- Penalty summary -->
+    <div class="penalty-highlight" style="margin-bottom:20px;">
+        <div>
+            <div class="label">Fine Amount</div>
+            <div class="amt">Rs. {{ "%.2f"|format(v.penalty_amount) }}</div>
+            <div class="label" style="margin-top:4px;">Violation #{{ v.id }} &nbsp;·&nbsp; {{ v.timestamp.strftime('%d %b %Y, %H:%M') }}</div>
+        </div>
+        <div style="text-align:right;">
+            <span class="badge b-{{ v.status }}" style="font-size:14px; padding:7px 16px;">{{ v.status.upper() }}</span>
+        </div>
+    </div>
+
+    <!-- Violation info -->
+    <div class="section">
+        <h2>📋 Violation Information</h2>
+        <div class="info-grid">
+            <div class="info-row">
+                <label>Violation Type</label>
+                <div class="val"><span class="badge b-{{ v.violation_type }}">{{ v.violation_type.upper() }}</span></div>
+            </div>
+            <div class="info-row">
+                <label>License Plate</label>
+                <div class="val">{{ v.user.license_number }}</div>
+            </div>
+            <div class="info-row">
+                <label>Date &amp; Time</label>
+                <div class="val">{{ v.timestamp.strftime('%d %B %Y at %H:%M') }}</div>
+            </div>
+            <div class="info-row">
+                <label>Detection Confidence</label>
+                <div class="val">{{ "%.1f"|format((v.confidence_score or 0) * 100) }}%</div>
+            </div>
+            <div class="info-row" style="grid-column: span 2">
+                <label>Location</label>
+                <div class="val">{{ v.location }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evidence photo (FR6) -->
+    <div class="section">
+        <h2>📷 Evidence (FR6 – Photo Proof)</h2>
+        <div class="evidence-box">
+            {% if ev %}
+            <img src="{{ ev }}" alt="Violation evidence" id="evidenceImg" onclick="openLightbox()">
+            <div class="evidence-label">
+                🔍 CCTV capture – {{ v.timestamp.strftime('%d %b %Y %H:%M') }} – {{ v.location }} &nbsp;·&nbsp; Click to enlarge
+            </div>
+            {% else %}
+            <div class="no-evidence">📷 No image captured for this record (simulated data)</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Location (FR7) -->
+    <div class="section">
+        <h2>📍 Location (FR7 – Location Reference)</h2>
+        <div class="map-placeholder">
+            <div style="font-size:36px; margin-bottom:10px;">🗺️</div>
+            <strong>{{ v.location }}</strong>
+            <p style="margin-top:6px; color:#777; font-size:13px;">
+                Ratmalana–Kollupitiya monitoring zone, Galle Road Corridor, Western Province, Sri Lanka<br>
+                <em>(Live map integration available in production deployment)</em>
+            </p>
+        </div>
+    </div>
+
+    <!-- Rule explanation (FR7) -->
+    <div class="section">
+        <h2>⚖️ Rule Explanation (FR7 – Why This Is a Violation)</h2>
+        <div class="rule-box">
+            <h4>📜 Applicable Law: {{ rule.title }}</h4>
+            <p>{{ rule.rule }}</p>
+        </div>
+        <div class="why-box">
+            <h4>⚠️ Why This Matters</h4>
+            <p>{{ rule.why }}</p>
+        </div>
+    </div>
+
+    <!-- Dispute info if disputed -->
+    {% if v.dispute %}
+    <div class="section">
+        <h2>📝 Dispute Status</h2>
+        <p style="font-size:14px;"><strong>Reference:</strong> DSP-{{ "%04d"|format(v.dispute.id) }}</p>
+        <p style="font-size:14px; margin-top:6px;"><strong>Status:</strong>
+            <span class="badge b-{{ v.dispute.status }}">{{ v.dispute.status.upper() }}</span>
+        </p>
+        <p style="font-size:14px; margin-top:6px;"><strong>Submitted:</strong> {{ v.dispute.submitted_at.strftime('%d %b %Y %H:%M') }}</p>
+        {% if v.dispute.decision_explanation %}
+        <p style="font-size:14px; margin-top:6px;"><strong>DMT Decision Note:</strong> {{ v.dispute.decision_explanation }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Payment receipt if paid -->
+    {% if v.payment %}
+    <div class="section">
+        <h2>✅ Payment Receipt</h2>
+        <div class="info-grid">
+            <div class="info-row">
+                <label>Receipt Number</label>
+                <div class="val">{{ v.payment.receipt_number }}</div>
+            </div>
+            <div class="info-row">
+                <label>Transaction Ref</label>
+                <div class="val">{{ v.payment.transaction_ref }}</div>
+            </div>
+            <div class="info-row">
+                <label>Amount Paid</label>
+                <div class="val">Rs. {{ "%.2f"|format(v.payment.amount) }}</div>
+            </div>
+            <div class="info-row">
+                <label>Payment Method</label>
+                <div class="val">{{ v.payment.payment_method.upper() }}</div>
+            </div>
+            <div class="info-row">
+                <label>Paid On</label>
+                <div class="val">{{ v.payment.paid_at.strftime('%d %b %Y, %H:%M') }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="section">
+        <h2>Actions</h2>
+        <div class="actions">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-back">← Dashboard</a>
+            {% if v.status == 'pending' %}
+            <a href="{{ url_for('pay_violation', vid=v.id) }}" class="btn btn-pay">💳 Pay Fine – Rs. {{ "%.2f"|format(v.penalty_amount) }}</a>
+            <a href="{{ url_for('submit_dispute', vid=v.id) }}" class="btn btn-dispute">📝 Dispute This Fine</a>
+            {% endif %}
+        </div>
+        {% if v.status == 'pending' %}
+        <p style="margin-top:12px; font-size:12px; color:#888;">
+            ⏰ Pay promptly to avoid additional late payment charges. Disputes must be submitted before payment.
+        </p>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+    {% if ev %}
+    <img src="{{ ev }}" alt="Evidence full size">
+    {% endif %}
+</div>
+
+<script>
+function openLightbox() { document.getElementById('lightbox').classList.add('open'); }
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeLightbox(); });
+</script>
+</body>
+</html>

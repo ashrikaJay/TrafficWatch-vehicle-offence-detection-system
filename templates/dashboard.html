@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Violations – Vehicle Offence Portal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+
+        .header {
+            background: linear-gradient(135deg, #043f34 0%, #b6e5d2 100%);
+            color: white; padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .header h1 { font-size: 22px; }
+        .header .sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .notif-badge {
+            background: #e74c3c; color: white; border-radius: 50%;
+            width: 20px; height: 20px; font-size: 11px;
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-left: 4px;
+        }
+        .nav-btn {
+            background: rgba(255,255,255,0.2); color: white;
+            padding: 8px 16px; border-radius: 6px; text-decoration: none;
+            font-size: 14px; cursor: pointer; border: none;
+            transition: 0.2s;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.35); }
+
+        .container { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+
+        /* Tab Nav */
+        .tabs { display: flex; gap: 4px; margin-bottom: 24px; }
+        .tab {
+            padding: 10px 22px; border-radius: 8px 8px 0 0; cursor: pointer;
+            font-size: 14px; font-weight: 600; border: none;
+            background: #e0e0e0; color: #555; transition: 0.2s;
+        }
+        .tab.active { background: white; color: #043f34; box-shadow: 0 -2px 6px rgba(0,0,0,0.08); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Summary Cards */
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin-bottom: 26px; }
+        .card {
+            background: white; padding: 22px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card h3 { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .card .val { font-size: 30px; font-weight: 700; color: #043f34; }
+        .card .val.warn { color: #e74c3c; }
+
+        /* Violations Table */
+        .table-wrap {
+            background: white; border-radius: 12px;
+            overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 13px 16px; text-align: left; font-size: 14px; }
+        th { background: #043f34; color: white; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        tr:hover { background: #f0faf6; cursor: pointer; }
+
+        .badge {
+            padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 700;
+            display: inline-block;
+        }
+        .b-pending { background: #fff3cd; color: #856404; }
+        .b-paid { background: #d4edda; color: #155724; }
+        .b-disputed { background: #cce5ff; color: #004085; }
+        .b-cancelled { background: #e2e3e5; color: #383d41; }
+        .b-helmet { background: #e3f2fd; color: #1976d2; }
+        .b-redlight { background: #ffebee; color: #c62828; }
+        .b-stopline { background: #fff3e0; color: #e65100; }
+
+        .btn {
+            padding: 8px 16px; border-radius: 6px; font-size: 13px;
+            font-weight: 600; text-decoration: none; cursor: pointer;
+            border: none; transition: 0.2s; display: inline-block;
+        }
+        .btn-pay { background: #4E8EA2; color: white; }
+        .btn-pay:hover { background: #043f34; }
+        .btn-view { background: #f0faf6; color: #043f34; border: 1px solid #b6e5d2; }
+        .btn-view:hover { background: #b6e5d2; }
+
+        /* Compliance Panel */
+        .compliance-card {
+            background: white; border-radius: 12px; padding: 26px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 22px;
+        }
+        .compliance-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .compliance-status {
+            padding: 6px 16px; border-radius: 20px; font-weight: 700; font-size: 14px;
+        }
+        .score-bar-bg {
+            background: #eee; border-radius: 8px; height: 12px; margin: 10px 0 4px;
+        }
+        .score-bar { background: linear-gradient(90deg, #043f34, #4E8EA2); border-radius: 8px; height: 12px; transition: width 0.8s; }
+
+        .rewards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 18px; }
+        .reward-item {
+            border: 2px solid #eee; border-radius: 10px; padding: 16px;
+            text-align: center; transition: 0.2s;
+        }
+        .reward-item.eligible { border-color: #b6e5d2; background: #f0faf6; }
+        .reward-item .ri { font-size: 32px; margin-bottom: 8px; }
+        .reward-item h4 { font-size: 13px; color: #333; margin-bottom: 4px; }
+        .reward-item p { font-size: 12px; color: #666; }
+        .reward-item .tick { color: #28a745; font-size: 18px; margin-bottom: 4px; }
+        .reward-item .lock { color: #aaa; font-size: 18px; margin-bottom: 4px; }
+
+        /* Notifications */
+        .notif-list { display: flex; flex-direction: column; gap: 10px; }
+        .notif-item {
+            background: white; border-radius: 10px; padding: 14px 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+            display: flex; gap: 14px; align-items: flex-start;
+        }
+        .notif-icon { font-size: 24px; margin-top: 2px; }
+        .notif-msg { font-size: 13px; color: #333; line-height: 1.5; }
+        .notif-meta { font-size: 11px; color: #999; margin-top: 4px; }
+        .notif-ch { padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+        .ch-sms { background: #e3f2fd; color: #1976d2; }
+        .ch-email { background: #f3e5f5; color: #7b1fa2; }
+
+        .empty { text-align: center; padding: 50px 20px; color: #aaa; }
+        .empty .ei { font-size: 60px; margin-bottom: 14px; opacity: 0.5; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>🚗 Vehicle Offence Portal</h1>
+        <div class="sub">Welcome, {{ user.name }} &nbsp;·&nbsp; {{ user.license_number }}</div>
+    </div>
+    <div class="header-right">
+        <a href="{{ url_for('logout') }}" class="nav-btn">Logout</a>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Summary cards -->
+    <div class="cards">
+        <div class="card">
+            <h3>Total Violations</h3>
+            <div class="val">{{ violations|length }}</div>
+        </div>
+        <div class="card">
+            <h3>Pending Penalties</h3>
+            <div class="val {% if total_penalty > 0 %}warn{% endif %}">
+                Rs. {{ "%.2f"|format(total_penalty) }}
+            </div>
+        </div>
+        <div class="card">
+            <h3>Compliance Score</h3>
+            <div class="val" style="color: {{ compliance.color }}">{{ compliance.score }}%</div>
+        </div>
+        <div class="card">
+            <h3>Notifications</h3>
+            <div class="val">{{ notifications|length }}</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('violations', this)">📋 Violations</button>
+        <button class="tab" onclick="showTab('compliance', this)">🏆 Compliance & Rewards</button>
+        <button class="tab" onclick="showTab('notifications', this)">
+            🔔 Notifications
+            {% if unread > 0 %}<span class="notif-badge">{{ unread }}</span>{% endif %}
+        </button>
+    </div>
+
+    <!-- VIOLATIONS TAB -->
+    <div class="tab-content active" id="tab-violations">
+        <div class="table-wrap">
+            {% if violations %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date &amp; Time</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Penalty (Rs.)</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in violations %}
+                    <tr onclick="window.location='{{ url_for('violation_detail', vid=v.id) }}'">
+                        <td><strong>#{{ v.id }}</strong></td>
+                        <td>{{ v.timestamp.strftime('%d %b %Y, %H:%M') }}</td>
+                        <td><span class="badge b-{{ v.violation_type }}">{{ v.violation_type.upper() }}</span></td>
+                        <td>{{ v.location }}</td>
+                        <td><strong>{{ "%.2f"|format(v.penalty_amount) }}</strong></td>
+                        <td><span class="badge b-{{ v.status }}">{{ v.status.upper() }}</span></td>
+                        <td onclick="event.stopPropagation()">
+                            {% if v.status == 'pending' %}
+                                <a href="{{ url_for('pay_violation', vid=v.id) }}" class="btn btn-pay">Pay Now</a>
+                            {% else %}
+                                <a href="{{ url_for('violation_detail', vid=v.id) }}" class="btn btn-view">View</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">
+                <div class="ei">✅</div>
+                <p>No violations found. Drive safely!</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- COMPLIANCE TAB -->
+    <div class="tab-content" id="tab-compliance">
+        <div class="compliance-card">
+            <div class="compliance-header">
+                <div>
+                    <h2 style="color:#043f34; margin-bottom:4px;">Compliance Status</h2>
+                    <p style="color:#666; font-size:14px;">
+                        Days without active violation: <strong>{{ compliance.days_clean }}</strong>
+                    </p>
+                </div>
+                <div class="compliance-status" style="background:{{ compliance.color }}22; color:{{ compliance.color }}">
+                    {{ compliance.status }}
+                </div>
+            </div>
+
+            <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:#666; margin-bottom:4px;">
+                    <span>Compliance Score</span>
+                    <span><strong>{{ compliance.score }}%</strong></span>
+                </div>
+                <div class="score-bar-bg">
+                    <div class="score-bar" style="width: {{ compliance.score }}%"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-top:4px;">
+                    <span>0 days</span><span>180 days (Insurance)</span>
+                    <span>365 days (License)</span><span>730 days (Toll)</span>
+                </div>
+            </div>
+
+            <h3 style="margin: 22px 0 14px; color:#333; font-size:15px;">🎁 Reward Eligibility (FR13/FR14)</h3>
+            <div class="rewards-grid">
+                {% for r in compliance.rewards %}
+                <div class="reward-item {% if r.eligible %}eligible{% endif %}">
+                    <div>{% if r.eligible %}<div class="tick">✅</div>{% else %}<div class="lock">🔒</div>{% endif %}</div>
+                    <div class="ri">{{ r.icon }}</div>
+                    <h4>{{ r.type }}</h4>
+                    <p>{{ r.detail }}</p>
+                    {% if r.eligible %}
+                    <div style="margin-top:8px; font-size:12px; color:#28a745; font-weight:600;">Eligible to claim</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top:20px; padding:14px; background:#f0faf6; border-radius:8px; font-size:13px; color:#555;">
+                <strong>How rewards work:</strong> Maintain a clean record on the Ratmalana–Kollupitiya route
+                for the required period to unlock DMT-partnered discounts on insurance, revenue licenses, and expressway tolls.
+                Rewards are automatically calculated from your violation history.
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATIONS TAB -->
+    <div class="tab-content" id="tab-notifications">
+        {% if notifications %}
+        <div class="notif-list">
+            {% for n in notifications %}
+            <div class="notif-item">
+                <div class="notif-icon">
+                    {% if n.channel == 'sms' %}📱{% else %}📧{% endif %}
+                </div>
+                <div style="flex:1">
+                    <div class="notif-msg">{{ n.message }}</div>
+                    <div class="notif-meta">
+                        {{ n.timestamp.strftime('%d %b %Y, %H:%M') }}
+                        &nbsp;·&nbsp;
+                        <span class="notif-ch ch-{{ n.channel }}">
+                            {{ 'SMS' if n.channel == 'sms' else 'Email' }}
+                        </span>
+                        {% if n.violation_id %}
+                        &nbsp;·&nbsp; Re: Violation #{{ n.violation_id }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty">
+            <div class="ei">🔔</div>
+            <p>No notifications yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function showTab(name, el) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+}
+</script>
+</body>
+</html>
