@@ -1,4 +1,4 @@
-# TrafficWatch — AI-Powered Vehicle Offence Detection System
+# TrafficWatch — Vehicle Offence Detection System Using Computer Vision Tech
 
 TrafficWatch is a full-stack traffic violation management platform that combines 
 computer vision-based offence detection with an end-to-end case management 
